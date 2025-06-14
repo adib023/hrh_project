@@ -1,0 +1,66 @@
+%function mainSolver(start_w,final_w)
+currentFolder = pwd;
+if currentFolder ~= "../solver"
+    cd ../solver
+end
+
+clc
+clear all
+close all
+addpath("../pre")
+
+filename = "../file/hrh.txt";
+nDofNode = 2;
+lattice = read_lattice(filename);
+A = 0.0001;
+startTime = 0;
+finalTime = 50;
+dt =  0.0001;
+
+ 
+defrmdConfig(lattice)
+% 
+% def_xCoord = read('../result/NRresult/def_xCoord.txt');
+% lattice.xCoord = def_xCoord;
+
+%[strpID,strpElem,strpfix] = read('../file/strpIDforDispy.txt');
+% % 
+%disp_anal_strip(lattice, strpID,strpElem,strpfix)
+
+eigenSolver(lattice)
+
+
+% 
+%rk_static(lattice,bndryLoadDur,dt,resultFileName_stat)
+
+%count = 0;
+
+% v = [0.025 0.05 0.1 0.15 0.2];
+% %
+% parfor loop = 1:length(v)
+%      rk_static(lattice,200,dt,0.1);
+% end
+
+% v_pres = 0.02;
+% rk_static(lattice,startTime,finalTime,dt,v_pres);
+%parallel_rk(lattice,startTime,dt,finalTime,v_pres,A)
+
+
+%freq_res_anal(lattice)
+
+%end
+
+
+% function parallel_rk(lattice,startTime,dt,finalTime,v_pres,A)
+% range =  linspace(0.3,0.6,100);
+% parfor loop =  1:length(range)
+%     w = range(loop);
+%     rk4(lattice,startTime,dt,finalTime,w,loop,v_pres,A);
+% end
+% end
+
+
+%rk_large_sin(lattice,startTime,finalTime,dt,2,0.01)
+
+
+rk4(lattice,startTime,finalTime,dt)
