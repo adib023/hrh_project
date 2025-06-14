@@ -1,0 +1,338 @@
+function [a1,a2,new_starting_node,nNode_total,xCoord,indx,rotIndx,ucID] =...
+ lattice(theta, N1,N2,k,kt,startingNode,lattice_type,nNode_total)
+
+theta = theta * pi/ 180;
+
+if lattice_type == "h"
+    a1 = [2*cos(theta) 0];
+    a2 = [0 2*sqrt(3)*cos(theta)];
+    x1 = startingNode;
+    x2 = x1+cos(theta)/cos(pi/6)*[cos(pi/6) sin(pi/6)];
+    x3 = x1+2*cos(theta) * [cos(pi/3) sin(pi/3)];
+    x4 = x1+[0 4/sqrt(3)*cos(theta)];
+elseif lattice_type == "r"
+    a1 = [2*cos(theta) 0];
+	a2 =  [0 2+2*sin(theta)];
+	x1 =  startingNode;
+x2 = x1 + [cos(theta) sin(theta)];
+x3 = x1 + [cos(theta) sin(theta)+1];
+x4 =  x1 + [0 1+2*sin(theta)];
+
+end
+
+
+
+nNode =  0;
+
+for q = 0:N2-1
+    for p =0: N1 -1
+        n1 = p * a1 + q * a2 + x1;
+        n2 = p * a1 + q * a2 + x2;
+        n3 = p * a1 + q * a2 + x3;
+        n4 = p * a1 + q * a2 + x4;
+        
+        nNode = nNode + 4;
+        ucID(p+1,q+1,1:4) =  [nNode-3 nNode-2 nNode-1 nNode];
+        xCoord(nNode-3,1:2) = n1;
+        xCoord(nNode-2,1:2) = n2;
+        xCoord(nNode-1,1:2) = n3;
+        xCoord(nNode,1:2) = n4;
+    end
+end
+
+%new_starting_node = xCoord(ucID(1,N2,1),1:2) + a2;
+new_starting_node = xCoord(ucID(1,N2,4),1:2) + [0 1];
+%%%% axial spring connection
+nElem =  0;
+
+%%%% connection intra unit cell
+
+for p = 1: N1
+    for q = 1: N2
+        nElem =  nElem + 3;
+        indx(nElem-2:nElem,1:3) = [ucID(p,q,1) ucID(p,q,2) k;
+                                   ucID(p,q,2) ucID(p,q,3) k;
+                                   ucID(p,q,3) ucID(p,q,4) k];
+        
+    end
+end
+
+%%%% connection inter unit cell
+
+for p = 1: N1 -1
+    for q = 1: N2 -1
+        nElem = nElem + 1;
+        indx(nElem, 1:3) = [ucID(p,q,2) ucID(p+1,q,1) k];
+        nElem = nElem + 1;
+        indx(nElem, 1:3) = [ucID(p,q,3) ucID(p+1,q,4) k];
+        nElem = nElem + 1;
+        indx(nElem, 1:3) = [ucID(p,q,4) ucID(p,q+1,1) k];
+    end
+end
+
+
+for p = 1: N1-1
+    for q =  N2
+        nElem = nElem + 1;
+        indx(nElem, 1:3) = [ucID(p,q,2) ucID(p+1,q,1) k];
+        nElem = nElem + 1;
+        indx(nElem, 1:3) = [ucID(p,q,3) ucID(p+1,q,4) k];
+    end
+end
+
+for p = N1
+    for q =  1:N2-1
+       nElem = nElem + 1;
+       indx(nElem, 1:3) = [ucID(p,q,4) ucID(p,q+1,1) k];
+    end
+end
+
+
+for p  = 1 : size(indx,1)
+    n1 = indx(p,1);
+    n2 = indx(p,2);
+    indx(p,4) = norm(xCoord(n1,1:2)-xCoord(n2,1:2));
+end
+
+
+
+%%%% rotational spring connection
+
+nRot =  0;
+
+for p = 2: N1 -1
+    for q = 2: N2 -1
+        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,1) ucID(p,q,2) ucID(p,q-1,4);
+                            ucID(p,q,1) ucID(p-1,q,2) ucID(p,q-1,4);
+                            ucID(p,q,1) ucID(p,q,2) ucID(p-1,q,2)];
+                        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,2) ucID(p,q,1) ucID(p+1,q,1);
+                            ucID(p,q,2) ucID(p,q,3) ucID(p+1,q,1);
+                            ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+        
+                        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p+1,q,4);
+                            ucID(p,q,3) ucID(p,q,2) ucID(p,q,4);
+                            ucID(p,q,3) ucID(p,q,4) ucID(p+1,q,4)];                
+        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3);
+                            ucID(p,q,4) ucID(p,q,3) ucID(p,q+1,1);
+                            ucID(p,q,4) ucID(p-1,q,3) ucID(p,q+1,1)];                
+        
+    end
+end
+
+for p = 2:N1-1
+    for q = 1
+        nRot =  nRot + 1;
+        rotIndx(nRot,1:3)= [ucID(p,q,1) ucID(p,q,2) ucID(p-1,q,2)];
+        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,2) ucID(p,q,1) ucID(p+1,q,1);
+            ucID(p,q,2) ucID(p,q,3) ucID(p+1,q,1);
+            ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+        
+        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p+1,q,4);
+            ucID(p,q,3) ucID(p,q,2) ucID(p,q,4);
+            ucID(p,q,3) ucID(p,q,4) ucID(p+1,q,4)];
+        
+        if N2 ~= 1
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3);
+                ucID(p,q,4) ucID(p,q,3) ucID(p,q+1,1);
+                ucID(p,q,4) ucID(p-1,q,3) ucID(p,q+1,1)];
+        else
+            nRot =  nRot + 1;
+            rotIndx(nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3)];
+        end
+    end
+end
+
+
+for p = 1
+    for q = 2: N2 -1
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [ucID(p,q,1) ucID(p,q,2) ucID(p,q-1,4)];
+                        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,2) ucID(p,q,1) ucID(p+1,q,1);
+                            ucID(p,q,2) ucID(p,q,3) ucID(p+1,q,1);
+                            ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+        
+                        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p+1,q,4);
+                            ucID(p,q,3) ucID(p,q,2) ucID(p,q,4);
+                            ucID(p,q,3) ucID(p,q,4) ucID(p+1,q,4)];                
+        
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p,q+1,1)
+                            ];                
+        
+    end
+end
+
+
+for p = N1
+    for q = 2: N2 -1
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,1) ucID(p,q,2) ucID(p,q-1,4);
+                            ucID(p,q,1) ucID(p-1,q,2) ucID(p,q-1,4);
+                            ucID(p,q,1) ucID(p,q,2) ucID(p-1,q,2)];
+                        
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [
+                            ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+        
+                        
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [
+                            ucID(p,q,3) ucID(p,q,2) ucID(p,q,4)
+                            ];                
+        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3);
+                            ucID(p,q,4) ucID(p,q,3) ucID(p,q+1,1);
+                            ucID(p,q,4) ucID(p-1,q,3) ucID(p,q+1,1)];                
+        
+    end
+end
+
+
+for p = 1
+    for q = 1
+                        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,2) ucID(p,q,1) ucID(p+1,q,1);
+                            ucID(p,q,2) ucID(p,q,3) ucID(p+1,q,1);
+                            ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+        
+                        
+        nRot =  nRot + 3;
+        rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p+1,q,4);
+                            ucID(p,q,3) ucID(p,q,2) ucID(p,q,4);
+                            ucID(p,q,3) ucID(p,q,4) ucID(p+1,q,4)];                
+        
+        if N2 ~=1                
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [
+                            ucID(p,q,4) ucID(p,q,3) ucID(p,q+1,1)
+                           ];                
+        end
+    end
+end
+
+
+for p = N1
+    for q = 1
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [
+                            ucID(p,q,1) ucID(p,q,2) ucID(p-1,q,2)];
+                        
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [
+                            ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+        
+                        
+        nRot =  nRot + 1;
+        rotIndx(nRot:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p,q,4)];                
+        
+        if N2 ~=1
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3);
+                ucID(p,q,4) ucID(p,q,3) ucID(p,q+1,1);
+                ucID(p,q,4) ucID(p-1,q,3) ucID(p,q+1,1)];
+        else
+            nRot =  nRot + 1;
+            rotIndx(nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3)];
+        end
+    end
+end
+
+if N2 ~=1
+    for p = 2:N1-1
+        for q = N2
+            
+            %         if N2 ~=1
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,1) ucID(p,q,2) ucID(p,q-1,4);
+                ucID(p,q,1) ucID(p-1,q,2) ucID(p,q-1,4);
+                ucID(p,q,1) ucID(p,q,2) ucID(p-1,q,2)];
+            %         end
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,2) ucID(p,q,1) ucID(p+1,q,1);
+                ucID(p,q,2) ucID(p,q,3) ucID(p+1,q,1);
+                ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+            
+            
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p+1,q,4);
+                ucID(p,q,3) ucID(p,q,2) ucID(p,q,4);
+                ucID(p,q,3) ucID(p,q,4) ucID(p+1,q,4)];
+            
+            nRot =  nRot + 1;
+            rotIndx(nRot:nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3)];
+            
+        end
+    end
+    for p = 1
+        for q = N2
+            
+            nRot =  nRot + 1;
+            rotIndx(nRot:nRot,1:3)= [ucID(p,q,1) ucID(p,q,2) ucID(p,q-1,4)];
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,2) ucID(p,q,1) ucID(p+1,q,1);
+                ucID(p,q,2) ucID(p,q,3) ucID(p+1,q,1);
+                ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+            
+            
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p+1,q,4);
+                ucID(p,q,3) ucID(p,q,2) ucID(p,q,4);
+                ucID(p,q,3) ucID(p,q,4) ucID(p+1,q,4)];
+            
+        end
+    end
+    for p = N1
+        for q =  N2
+            
+            nRot =  nRot + 3;
+            rotIndx(nRot-2:nRot,1:3)= [ucID(p,q,1) ucID(p,q,2) ucID(p,q-1,4);
+                ucID(p,q,1) ucID(p-1,q,2) ucID(p,q-1,4);
+                ucID(p,q,1) ucID(p,q,2) ucID(p-1,q,2)];
+            
+            nRot =  nRot + 1;
+            rotIndx(nRot:nRot,1:3)= [
+                ucID(p,q,2) ucID(p,q,1) ucID(p,q,3)];
+            
+            
+            nRot =  nRot + 1;
+            rotIndx(nRot:nRot,1:3)= [ucID(p,q,3) ucID(p,q,2) ucID(p,q,4)];
+            
+            nRot =  nRot + 1;
+            rotIndx(nRot:nRot,1:3)= [ucID(p,q,4) ucID(p,q,3) ucID(p-1,q,3)
+                ];
+            
+        end
+    end
+end
+
+
+rotIndx(:,4) = kt;
+
+indx(:, 1:2) = indx(:, 1:2) + nNode_total; 
+rotIndx(:, 1:3) = rotIndx(:, 1:3) + nNode_total;
+ucID = ucID + nNode_total;
+nNode_total =  nNode_total + nNode;
+
+
+%plot_lattice(xCoord,indx,rotIndx,nNode,'tiral')
+end
+
