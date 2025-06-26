@@ -1,0 +1,59 @@
+#!/bin/bash
+#case 1 deformed lattice
+#case 2 deformed mode
+#case 3 undeformed mode
+
+clear
+
+CASE="$1"
+
+run(){
+
+local F="$1"
+
+if [ "$F" = "1" ];
+then
+
+if [ -d ../vtkDeformed ];
+then
+rm ../vtkDeformed/*
+else
+mkdir ../vtkDeformed
+fi
+
+local COUNT="109"
+
+elif [ "$F" = "2" ];
+then
+
+if [ -d ../vtkModeDeformed ];
+then
+rm ../vtkModeDeformed/*
+else
+mkdir ../vtkModeDeformed
+fi
+
+local COUNT="200"
+
+else
+
+if [ -d ../vtkModeUndeformed ];
+then
+rm ../vtkModeUndeformed/*
+else
+mkdir ../vtkModeUndeformed
+fi
+
+local COUNT="200"
+
+fi
+
+make -j20
+./main "$F" "$COUNT"
+
+
+}
+
+
+run "$CASE"
+
