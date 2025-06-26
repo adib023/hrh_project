@@ -1,0 +1,44 @@
+function [totalE, P_global, K_global] = ...
+    total_assembly(isSparse, elemType,nElem, xNode, indx,...
+    elemMatIndx, matStiff, pbcNode,fixedNode, ...
+    eqNum , Wmat , UUR, calP,calK)
+
+
+global DIM 
+
+totalE = 0;
+[shapeFunction, nGaussPts, gaussPts, gaussWeights] = ...
+    getShapeFunction_and_gaussInfo(elemType);
+
+
+P_global =  zeros(DIM*size(xNode,1),1);
+
+%K_global = [] ; 
+
+if isSparse == 0 
+
+	K_global =  zeros(DIM*size(xNode,1),DIM*size(xNode,1));
+
+elseif isSparse == 1
+
+	ndof = DIM * size(xNode,1) ; 
+	K_global = sparse(ndof,ndof) ; 
+end
+ 
+[totalE,P_global,K_global] = ...
+    elasticAssemble (shapeFunction, nGaussPts, gaussPts, ...
+    gaussWeights,nElem, xNode, indx, matStiff,elemMatIndx,...
+    pbcNode, fixedNode, eqNum , UUR, totalE, P_global, K_global,calP,calK);
+
+
+
+if calK 
+K_global = Wmat'*K_global*Wmat ;   %%%%%% reduced K_global
+end
+
+
+if calP
+P_global = Wmat'*P_global ; %%%%% reduced P_global
+end
+
+end

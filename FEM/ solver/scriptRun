@@ -1,0 +1,8 @@
+#!/bin/bash
+
+matlab -nodesktop -r mainSolver &
+
+#cd ../../postProcess/
+#make 
+#./scriptRun
+
